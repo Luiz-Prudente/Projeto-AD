@@ -2,36 +2,61 @@ import pandas as pd
 import os
 from collections import Counter
 from config.settings import RAW_DATA_DIR, INTERIM_DATA_DIR
+from src.io.file_handler import save_csv
 
-def load_csv_files():
+def get_csv_files():
     '''
-    Método para resolver problemas de encoding e arquivos que esperavam 2 colunas e apareciam mais colunas
-    dfs = DataFrames
+    Lista os arquivos csv de uma pasta
     '''
-    files = list(RAW_DATA_DIR.glob('*.csv')) # O metodo glob permite encontrar arquivos com base em sua extensão, nesse caso *.csv (todos os arquivos csv)
+    files = list(RAW_DATA_DIR.glob('*.csv'))
+    return files
+
+
+def load_csv(file):
+    '''
+    Transforma o arquivo csv em um dataframe, levando em consideração seu encoding
+    '''
+    sucess = False
+    df = None
+
+    for enc in ('utf-8-sig', 'latin1', 'cp1252'):
+        try:
+            df = pd.read_csv(
+                file,
+                sep=None,
+                engine='python',
+                encoding=enc,
+                on_bad_lines='skip'
+            )
+
+            # Remove sujeira das colunas
+            df.columns = [
+                col.replace('\ufeff', '').replace('ï»¿', '').strip()
+                for col in df.columns
+            ]
+
+            sucess = True
+            break
+
+        except Exception:
+            continue
+
+    if not sucess:
+        print(f'Erro em {file}: Nenhum encoding encontrado')
+        return None
+
+    return df
+
+
+def load_csv_files(files):
+    '''
+    Transforma os arquivos csv em dataframes e os junta em uma lista
+    '''
     dfs = []
     for file in files:
-        sucess = False
-        for enc in ('utf-8-sig','latin1', 'cp1252'):
-            try:
-                df = pd.read_csv(
-                    file,
-                    sep=None, #Detectará o separador do CSV autoaticamente
-                    engine='python', #Engine mais tolerante
-                    encoding=enc, #Resolve os problemas de encoding, como acentos
-                    on_bad_lines='skip' # Caso não dê jeito
-                )
-                #Remove o ï»¿ de algumas colunas
-                df.columns = [col.replace('\ufeff','').replace('ï»¿', '').strip() for col in df.columns]
-                
-                dfs.append(df)
-                sucess = True
-                break
-
-            except Exception as e:
-                continue
-        if not sucess:
-            print(f'Erro em {file}: Nenhum ecoding encontrado')
+        df = load_csv(file)
+        if df is not None:
+            dfs.append(df)
     return dfs
 
 def shape_validation(dataframes : list):
@@ -61,8 +86,8 @@ def concat_dataframe(dataframes : list):
     if shape_validation(dataframes):
         final_df = pd.concat(dataframes, ignore_index= True)
         if rows_quantity(dataframes, final_df):
-            final_df.to_csv(os.path.join(INTERIM_DATA_DIR, 'precos_comb_unificados.csv'), index=False) # o uso de os.path.join evita problemas com sistemas diferentes
-            print("Dados unificados com sucesso, dataframe salvo")
+            save_csv(final_df, INTERIM_DATA_DIR, 'precos_comb_unificados.csv')
+            
     else:
         print('Dados inconsistentes, verifique')
 
@@ -76,7 +101,7 @@ def rows_quantity(dataframes: list, final_df):
         dataframes_rows += df.shape[0]
 
     if dataframes_rows != new_dataframe_rows:
-        print(f' Quantidade de linhas nos arquivos diferentes, somados os dataframes individuais possuem {dataframes_rows} e o novo dataframe concatenado possui {new_dataframes_rows}')
+        print(f' Quantidade de linhas nos arquivos diferentes, somados os dataframes individuais possuem {dataframes_rows} e o novo dataframe concatenado possui {new_dataframe_rows}')
         return False
     else:
         return True
