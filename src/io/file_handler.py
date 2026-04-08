@@ -7,4 +7,5 @@ def save_csv(dataframe, path, filename):
     '''
     full_path = os.path.join(path, filename)
     dataframe.to_csv(full_path, index=False)
-    print("Dados unificados com sucesso, dataframe salvo")
+    name = filename.strip('.csv')
+    print(f'Dados unificados com sucesso, dataframe {name} salvo')
