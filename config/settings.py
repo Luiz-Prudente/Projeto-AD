@@ -3,7 +3,7 @@ from pathlib import Path
 #Pasta principal
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-#Pastas principal de dado
+#Pastas principal de data
 DATA_DIR = BASE_DIR / 'data'
 
 #Subpastas de data
