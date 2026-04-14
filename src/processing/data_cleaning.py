@@ -30,7 +30,10 @@ def normalize_name(dataframe):
     return dataframe.rename(columns={
         'regiao_sigla': 'regiao',
         'estado_sigla': 'estado',
-        'revenda': 'posto'
+        'revenda': 'posto',
+        "data_da_coleta": "data_coleta",
+        "valor_de_venda": "valor_venda",
+        "unidade_de_medida": "unidade_medida"
     })
 
 def drop_missing_values(dataframe):
